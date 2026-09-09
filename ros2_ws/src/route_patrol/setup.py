@@ -24,6 +24,8 @@ setup(
     },
     entry_points={
         'console_scripts': [
+            'chassis_node = route_patrol.chassis_node:main',
+            'controller_node = route_patrol.controller_node:main',
         ],
     },
 )
