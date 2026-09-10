@@ -1,6 +1,6 @@
 import rclpy
 from rclpy.node import Node
-from geometry_msgs.msg import Twist
+from geometry_msgs.msg import Twist, Point
 import time
 
 
@@ -20,6 +20,12 @@ class ChassisNode(Node):
             Twist,
             'cmd_vel',
             self.velocity_callback,
+            10
+        )
+
+        self.position_publisher = self.create_publisher(
+            Point,
+            'position',
             10
         )
 
@@ -58,6 +64,11 @@ class ChassisNode(Node):
         self.y += self.vy * dt
 
         self.last_update_time = now
+
+        msg = Point()
+        msg.x = self.x
+        msg.y = self.y
+        self.position_publisher.publish(msg)
 
         self.get_logger().info(
             f'Position: x={self.x:.3f}, y={self.y:.3f}'
