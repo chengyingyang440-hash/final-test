@@ -19,11 +19,24 @@ class ChassisNode(Node):
         )
 
     def velocity_callback(self, msg):
-        self.vx = msg.linear.x
-        self.vy = msg.linear.y
+        
+        if msg.linear.x > 2.0:
+            self.vx = 2.0
+        elif msg.linear.x < -2.0:
+            self.vx = -2.0
+        else:
+            self.vx = msg.linear.x
+
+        if msg.linear.y > 2.0:
+            self.vy = 2.0
+        elif msg.linear.y < -2.0:
+            self.vy = -2.0
+        else:
+            self.vy = msg.linear.y
 
         self.get_logger().info(
-            f'Received velocity: vx={self.vx:.2f}, vy={self.vy:.2f}'
+            f'Received velocity: vx={msg.linear.x:.2f}, vy={msg.linear.y:.2f}'
+            f' | Clamped velocity: vx={self.vx:.2f}, vy={self.vy:.2f}'
         )
 
 
