@@ -4,6 +4,8 @@ from geometry_msgs.msg import Twist, Point
 import time
 import math
 
+from route_patrol.route_data import WAYPOINTS
+
 
 class ChassisNode(Node):
 
@@ -13,8 +15,17 @@ class ChassisNode(Node):
         self.vx = 0.0
         self.vy = 0.0
 
-        self.x = 0.0
-        self.y = 0.0
+        self.declare_parameter('start', 1)
+        start = self.get_parameter('start').value
+
+        if start not in WAYPOINTS:
+            raise ValueError('起点必须是 1～8 的路径点编号')
+
+        self.x, self.y = WAYPOINTS[start]
+
+        self.get_logger().info(
+            f'Initial position: start={start}, x={self.x}, y={self.y}'
+            )
         self.last_update_time = time.monotonic()
 
         self.subscription = self.create_subscription(

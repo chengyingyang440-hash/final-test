@@ -4,24 +4,47 @@ from geometry_msgs.msg import Twist, Point
 import time
 import math
 
-from route_patrol.route_data import WAYPOINTS, build_route
+from route_patrol.route_data import WAYPOINTS, build_route ,build_patrol_route
 
 class ControllerNode(Node):
 
     def __init__(self):
         super().__init__('controller_node')
 
+        self.declare_parameter('mode', 'point')
+        self.declare_parameter('start', 1)
+        self.declare_parameter('end', 5)
+
+        mode = self.get_parameter('mode').value
+        start = self.get_parameter('start').value
+        end = self.get_parameter('end').value
+
         self.x = None
         self.y = None
 
-        self.route = build_route(1, 5)
-        self.target_index = 1
-        self.finished = False
+        if mode == 'patrol':
+            self.route = build_patrol_route(start)
+        elif mode == 'point':
+            self.route = build_route(start, end)
+        else:
+            raise ValueError('模式必须是 "point" 或 "patrol"')
+
+        if len(self.route) == 1:
+            self.target_index = 0
+            self.finished = True
+        else:
+            self.target_index = 1
+            self.finished = False
 
         target_id = self.route[self.target_index]
         self.target_x, self.target_y = WAYPOINTS[target_id]
 
         self.get_logger().info(f'Route: {self.route}')
+
+        if self.finished:
+            self.get_logger().info(
+                f'Task completed: No movement needed, already at the target waypoint {self.route[0]}'
+            )
 
         self.position_subscription = self.create_subscription(
             Point,
@@ -63,7 +86,8 @@ class ControllerNode(Node):
             if self.target_index >= len(self.route):
                 self.finished = True
                 self.get_logger().info(
-                    f'Task completed: x={self.x:.3f}, y={self.y:.3f}'
+                    f'Task completed: end = {self.route[-1]}'
+                    f' | Final position: x={self.x:.3f}, y={self.y:.3f}'
                 )
             else:
                 target_id = self.route[self.target_index]
@@ -88,8 +112,7 @@ class ControllerNode(Node):
         self.x = msg.x
         self.y = msg.y
 
-        self.get_logger().debug
-        (
+        self.get_logger().debug(
             f'Received position: x={self.x:.3f}, y={self.y:.3f}'
         )
 
