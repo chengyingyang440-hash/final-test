@@ -4,6 +4,7 @@ from geometry_msgs.msg import Twist, Point
 import time
 import math
 
+from route_patrol.route_data import WAYPOINTS, build_route
 
 class ControllerNode(Node):
 
@@ -13,8 +14,14 @@ class ControllerNode(Node):
         self.x = None
         self.y = None
 
-        self.target_x = 4.0
-        self.target_y = 3.0
+        self.route = build_route(1, 5)
+        self.target_index = 1
+        self.finished = False
+
+        target_id = self.route[self.target_index]
+        self.target_x, self.target_y = WAYPOINTS[target_id]
+
+        self.get_logger().info(f'Route: {self.route}')
 
         self.position_subscription = self.create_subscription(
             Point,
@@ -44,20 +51,35 @@ class ControllerNode(Node):
 
         msg = Twist()
 
-        if distance <= 0.01:
+        if self.finished:
             msg.linear.x = 0.0
             msg.linear.y = 0.0
+        elif distance <= 0.01:
+            reached_id = self.route[self.target_index]
+            self.get_logger().info(f'Reached waypoint: {reached_id}')
+
+            self.target_index += 1
+
+            if self.target_index >= len(self.route):
+                self.finished = True
+                self.get_logger().info(
+                    f'Task completed: x={self.x:.3f}, y={self.y:.3f}'
+                )
+            else:
+                target_id = self.route[self.target_index]
+                self.target_x, self.target_y = WAYPOINTS[target_id]
+                self.get_logger().info(f'Next waypoint: {target_id}')
+
         else:
             msg.linear.x = 0.5 * dx
             msg.linear.y = 0.5 * dy
 
             if abs(msg.linear.x) > 2.0 or abs(msg.linear.y) > 2.0:
-                msg.linear.x = 2.0 * (dx / distance)
-                msg.linear.y = 2.0 * (dy / distance)
+                msg.linear.x = 2.0 * dx / distance
+                msg.linear.y = 2.0 * dy / distance
 
         self.publisher.publish(msg)
-
-        self.get_logger().info(
+        self.get_logger().debug(
             f'Sent velocity: vx={msg.linear.x:.2f}, vy={msg.linear.y:.2f}'
             f' | Distance to target: {distance:.3f} m'
         )
@@ -66,7 +88,8 @@ class ControllerNode(Node):
         self.x = msg.x
         self.y = msg.y
 
-        self.get_logger().info(
+        self.get_logger().debug
+        (
             f'Received position: x={self.x:.3f}, y={self.y:.3f}'
         )
 
