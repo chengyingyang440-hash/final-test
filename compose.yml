@@ -1,0 +1,12 @@
+services:
+  patrol:
+    build: .
+    image: route-patrol:humble
+    command:
+      - ros2
+      - launch
+      - route_patrol
+      - patrol.launch.py
+      - mode:=${MODE:-point}
+      - start:=${START:-8}
+      - end:=${END:-4}
