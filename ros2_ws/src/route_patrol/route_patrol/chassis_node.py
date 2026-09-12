@@ -18,6 +18,8 @@ class ChassisNode(Node):
         self.declare_parameter('start', 1)
         start = self.get_parameter('start').value
 
+        self.last_log_time = time.monotonic()
+
         if start not in WAYPOINTS:
             raise ValueError('起点必须是 1～8 的路径点编号')
 
@@ -63,10 +65,11 @@ class ChassisNode(Node):
         else:
             self.vy = msg.linear.y
 
-        self.get_logger().info(
+        self.get_logger().debug(
             f'Received velocity: vx={msg.linear.x:.2f}, vy={msg.linear.y:.2f}'
             f' | Clamped velocity: vx={self.vx:.2f}, vy={self.vy:.2f}'
         )
+
 
     def update_position(self):
         now = time.monotonic()
@@ -82,7 +85,14 @@ class ChassisNode(Node):
         msg.y = self.y
         self.position_publisher.publish(msg)
 
-        self.get_logger().info(
+        if now - self.last_log_time >= 1.0:
+            self.get_logger().info(
+                f'State: x={self.x:.3f}, y={self.y:.3f}'
+                f' | vx={self.vx:.3f}, vy={self.vy:.3f}'
+            )
+            self.last_log_time = now
+
+        self.get_logger().debug(
             f'Position: x={self.x:.3f}, y={self.y:.3f}'
         )
 
